@@ -125,7 +125,7 @@ append-only; the skill is instructed to never overwrite or delete a prior entry.
 ## 5. Setup & running it
 
 **Prerequisites:**
-- Python 3.11+
+- Python 3.11+ and [uv](https://docs.astral.sh/uv/)
 - A GitHub personal access token (optional but recommended — `find.py` and `download.py`
   both work unauthenticated, just at GitHub's lower unauthenticated rate limit, with a
   warning printed to say so)
@@ -134,8 +134,8 @@ append-only; the skill is instructed to never overwrite or delete a prior entry.
 **Setup:**
 
 ```bash
-# 1. Install dependencies
-python -m pip install -r requirements.txt
+# 1. Install dependencies (creates .venv/, resolves from uv.lock)
+uv sync
 
 # 2. Set up your token
 cp .env.example .env
