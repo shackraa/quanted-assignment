@@ -67,9 +67,16 @@ must append an entry to `session-notes.md` at the project root. Each entry must 
 new one.
 
 ## Project Structure
-- `find.py` — GitHub repo discovery, writes `manifest.json`.
+- `src/quanted_pipeline/` — the real implementation, as an importable package:
+  - `common.py` — shared manifest I/O (`load_manifest`) and the shared GitHub API
+    header helper (`_base_headers`, covering `Authorization`/`X-GitHub-Api-Version`).
+  - `find.py` — GitHub repo discovery, writes `manifest.json`.
+  - `download.py` — incremental README downloader, writes to `raw/`.
+- `find.py` — root-level thin wrapper that delegates to
+  `src/quanted_pipeline/find.py` so `python find.py` still works standalone.
+- `download.py` — root-level thin wrapper that delegates to
+  `src/quanted_pipeline/download.py` so `python download.py` still works standalone.
 - `manifest.json` — human-editable ingestion list.
-- `download.py` — incremental README downloader, writes to `raw/`.
 - `raw/` — downloaded README files, one per repo.
 - `wiki/` — generated Obsidian-style Markdown vault (output of the skill).
 - `.claude/skills/vault-builder/` — the single skill implementing both `create` and
