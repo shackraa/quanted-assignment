@@ -4,6 +4,14 @@ An "agentic company" knowledge pipeline: discover popular GitHub repos in the AI
 ecosystem, download their READMEs, and turn them into an Obsidian-style Markdown wiki
 that an internal agent could read as a knowledge layer.
 
+## Quick Start
+
+```bash
+uv sync && cp .env.example .env   # then set GITHUB_TOKEN in .env
+python find.py && python download.py
+claude   # then: "Build the wiki using the vault-builder skill."
+```
+
 ## 1. Overview
 
 ```
@@ -166,44 +174,36 @@ pages for repos that don't already have one.
 
 ## 6. How Claude Code was used
 
-The project was built by writing [`CLAUDE.md`](CLAUDE.md) first, before any code — it
-encodes the pipeline shape and the hard constraints (no LLM code in `find.py`/
-`download.py`, understanding lives only in the skill layer, one skill with two modes, the
-manifest as human-editable source of truth, the append-only `session-notes.md` logging
-rule) so every later prompt could be checked against a written contract instead of
-re-litigating the rules each time.
+[`CLAUDE.md`](CLAUDE.md) was written first, before any code — it encodes the pipeline
+shape and the hard constraints (no LLM code in `find.py`/`download.py`, understanding
+lives only in the skill layer, one skill with two modes, the manifest as human-editable
+source of truth, the append-only `session-notes.md` logging rule).
 
-Each script and the skill were then built from targeted, fully-specified prompts rather
-than one broad "build the pipeline" ask — e.g. `find.py`'s spec named the exact endpoint,
-the topic list, the dedup/sort/merge rules, and how existing vs. new entries should be
-treated, before any code was written. Each piece was tested against the real GitHub API
-immediately after being written, not mocked: `find.py`'s first run produced a real,
-live-data `manifest.json`; `download.py` was run twice back-to-back specifically to prove
-the incremental skip behavior (second run: 0 downloaded, all skipped) rather than taking
-the "incremental" claim on faith.
+Each script and the skill were built from targeted, fully-specified prompts — e.g.
+`find.py`'s spec named the exact endpoint, the topic list, the dedup/sort/merge rules,
+and how existing vs. new entries should be treated. Each piece was tested against the
+real GitHub API immediately after being written: `find.py`'s first run produced a real,
+live-data `manifest.json`; `download.py` was run twice back-to-back to confirm the
+incremental skip behavior (second run: 0 downloaded, all skipped).
 
 When the cap logic in `merge_manifest()` was rewritten to target a total active count
-instead of a flat per-run limit, the new function was sanity-checked with an isolated
-test (simulating an excluded repo resurfacing with a wildly different star count) before
-being trusted against the live API — confirming excluded entries stay completely frozen
-while active entries still refresh.
+instead of a flat per-run limit, it was sanity-checked with an isolated test (an excluded
+repo resurfacing with a wildly different star count) — confirming excluded entries stay
+completely frozen while active entries still refresh.
 
-Manual review caught things automated logic wasn't asked to catch: the first live
+Manual review caught what automated logic wasn't asked to catch: the first live
 `find.py` run surfaced entries with implausible star counts (`affaan-m/ECC` at 225,282
-stars, `NousResearch/hermes-agent` at 208,142 — both far outside what's plausible for
-those repos) and at least one topically mismatched result. Rather than adding automated
-anomaly filtering to `find.py`, the fix was architectural: a `status`/`excluded_reason`
-field on manifest entries, so that judgment call stays a manual, auditable curation step
-instead of a hardcoded blocklist or heuristic buried in the script.
+stars, `NousResearch/hermes-agent` at 208,142) and at least one topically mismatched
+result. The fix was architectural rather than a filtering heuristic: a
+`status`/`excluded_reason` field on manifest entries, keeping that judgment call a
+manual, auditable curation step.
 
-`session-notes.md` captures this same distinction directly. Its first entry (2026-07-03,
-`create` mode) logs the initial wiki build: 20 repos processed, pages listed by category,
-zero unmatched files. A second entry, logged after the fact, documents a correction to
-wording on the `daytonaio/daytona` page (it had been described as "archived," which
-overstated what the repo's own README actually says — development moved to a private
-codebase, but the repo isn't GitHub-archived) — explicitly marked as a manual correction
-rather than a new skill run, so the log distinguishes actual skill executions from direct
-edits.
+`session-notes.md` reflects the same distinction. Its first entry (2026-07-03, `create`
+mode) logs the initial wiki build: 20 repos processed, pages listed by category, zero
+unmatched files. A second entry documents a correction to the `daytonaio/daytona` page's
+wording (it had been described as "archived," which overstated the README — development
+moved to a private codebase, but the repo isn't GitHub-archived), marked explicitly as a
+manual correction rather than a new skill run.
 
 ## 7. What I'd improve with more time
 
@@ -227,3 +227,7 @@ edits.
   a topic with a deep pool of relevant repos beyond the top 30 by stars is invisible to
   discovery. This wasn't a real problem for the topics chosen here, but it would matter
   more with narrower or newer topics.
+- **A Karpathy-LLM-Wiki-inspired `lint` mode for the skill**, checking for broken
+  `[[wikilinks]]` and index/orphan consistency, is a natural next step once the vault
+  grows beyond a couple dozen pages — not implemented now since at this scale manual
+  review already covers it.
