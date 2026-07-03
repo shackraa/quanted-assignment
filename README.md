@@ -154,13 +154,13 @@ cp .env.example .env
 
 ```bash
 # 1. Discover repos and write/update manifest.json
-python find.py
+uv run python find.py
 
 # (optional) review manifest.json by hand here — flip any entry's
 # status to "excluded" and add an excluded_reason if it doesn't belong
 
 # 2. Download READMEs for every active, not-yet-downloaded entry
-python download.py
+uv run python download.py
 
 # 3. Build (or update) the wiki — inside Claude Code, in this project directory
 claude
